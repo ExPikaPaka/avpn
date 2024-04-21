@@ -1,3 +1,23 @@
+# Ignore everything in the android directory
+/android/*
+
+# Exclude specific files from being ignored
+!.gitignore
+!build.gradle.kts
+!gradle.properties
+!gradlew
+!gradlew.bat
+!settings.gradle.kts
+
+# Exclude specific directories from being ignored
+!android/app/
+!android/.idea/
+!android/gradle/
+
+
+
+# The rest of the original .gitignore. Maybe you should remove this, I don't know.
+
 # Prerequisites
 *.d
 
