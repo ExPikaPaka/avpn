@@ -54,7 +54,7 @@ void UDPServer::handleClient(const std::string& message, const sockaddr_in& clie
     const std::string response = "Hello from server!";
     try {
         ssize_t bytesSent = sendto(socketFd, response.c_str(), response.length(), 0, (const sockaddr*)&clientAddr, clientLen);
-        if (bytesSent > 0) {
+        if (bytesSent < 0) {
             throw std::system_error(errno, std::system_category(), "Failed to send response");
         }
     } catch (const std::exception& e) {
