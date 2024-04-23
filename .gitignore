@@ -17,6 +17,14 @@
 
 
 
+
+# Server side
+# Ignore VSCode folder
+/server/.vscode/
+
+
+
+
 # The rest of the original .gitignore. Maybe you should remove this, I don't know.
 
 # Prerequisites
