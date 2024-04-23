@@ -2,8 +2,12 @@
 
 UDPServer::UDPServer(uint16_t port, size_t numThreads)
     : threadPool(std::make_unique<ThreadPool>(numThreads)) {
-    socketFd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (socketFd == -1) {
+    socketFd = createSocket(port);
+}
+int UDPServer::createSocket(uint16_t port) {
+    
+    int socket_fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    if (socket_fd == -1) {
         throw std::system_error(errno, std::system_category(), "Failed to create socket");
     }
 
@@ -12,12 +16,18 @@ UDPServer::UDPServer(uint16_t port, size_t numThreads)
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port);
 
+    return socket_fd;
+}
+
+void UDPServer::closeSocket(int socketFd) {
+    if (socketFd != -1) {
+        close(socketFd);
+        std::cout << "Socket closed" << std::endl;
+    }
 }
 
 UDPServer::~UDPServer() {
-    if (socketFd != -1) {
-        close(socketFd);
-    }
+    closeSocket(socketFd);
 }
 
 bool UDPServer::start() {
@@ -29,35 +39,52 @@ bool UDPServer::start() {
 }
 
 void UDPServer::run() {
-    constexpr int bufferSize = 1024;
+    constexpr int bufferSize = 32767;
     char buffer[bufferSize];
-
+    tun = std::make_unique<TunInterface>("tun0", "10.0.0.1", "255.255.255.0");
+    auth = std::make_unique<AuthManager>("userdb.txt");
+    
     while (true) {
         sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
         ssize_t bytesReceived = recvfrom(socketFd, buffer, bufferSize, 0, (sockaddr*)&clientAddr, &clientLen);
         if (bytesReceived == -1) {
-            throw std::system_error(errno, std::system_category(), "Failed to receive data");
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            } else {
+                throw std::system_error(errno, std::system_category(), "Failed to receive data");
+            }
         }
 
         std::string message(buffer, bytesReceived);
-        threadPool->enqueue([this, message, clientAddr, clientLen] {
-            handleClient(message, clientAddr, clientLen);
-        });
+
+        if (!auth->isClientAuthorized(clientAddr)) {
+            if (auth->authenticate(message, clientAddr)) {
+                std::string response = "OK";
+                sendto(socketFd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientAddr, clientLen);
+            } else {
+                std::string response = "FAIL";
+                sendto(socketFd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientAddr, clientLen);
+            }
+        } else {
+            threadPool->enqueue([this, message, clientAddr, clientLen] {
+                handleClient(message, clientAddr, clientLen);
+            });
+        }
     }
 }
 
-void UDPServer::handleClient(const std::string& message, const sockaddr_in& clientAddr, socklen_t clientLen) {
-    std::cout << "Received message: " << message << std::endl;
+void UDPServer::handleClient(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen) {
+    constexpr int bufferSize = 32767;
+    char buffer[bufferSize];
+    tun->write(message.c_str(), message.length());
 
-    const std::string response = "Hello from server!";
-    try {
-        ssize_t bytesSent = sendto(socketFd, response.c_str(), response.length(), 0, (const sockaddr*)&clientAddr, clientLen);
-        if (bytesSent < 0) {
-            throw std::system_error(errno, std::system_category(), "Failed to send response");
+    ssize_t bytesRead;
+    do {
+        bytesRead = tun->read(buffer, bufferSize);
+        if (bytesRead > 0) {
+            sendto(socketFd, buffer, bytesRead, 0, (struct sockaddr*)&clientAddr, clientLen);
         }
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+    } while (bytesRead == bufferSize); 
 }

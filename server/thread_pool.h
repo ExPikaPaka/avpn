@@ -21,6 +21,7 @@ public:
     ~ThreadPool() {
         if (!stop) {
             Destroy();
+            std::cout << "close thread" << std::endl;
         }
     }
 
