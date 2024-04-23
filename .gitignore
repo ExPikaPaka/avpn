@@ -20,7 +20,7 @@
 
 # Server side
 # Ignore VSCode folder
-/server/.vscode/
+.vscode/
 
 
 
