@@ -42,7 +42,7 @@ void UDPServer::run() {
     constexpr int bufferSize = 32767;
     char buffer[bufferSize];
     tun = std::make_unique<TunInterface>("tun0", "10.0.0.1", "255.255.255.0");
-    auth = std::make_unique<AuthManager>("userdb.txt");
+    auth = std::make_unique<AuthManager>("res/db/userdb.txt");
     
     while (true) {
         sockaddr_in clientAddr;
