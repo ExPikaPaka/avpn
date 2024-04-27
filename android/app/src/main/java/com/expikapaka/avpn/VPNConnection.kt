@@ -2,27 +2,35 @@ package com.expikapaka.avpn
 
 import android.os.Handler
 import android.os.Looper
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
+import com.expikapaka.avpn.transmission.UDPConnection
 
+
+import kotlin.math.log
+///////////// ABOUT THIS PACKAGE /////////////////////////////////////
+//  This package contains VPNConnection class that establishes
+//    connection between Client (us) and Server.
+//
+//  Currently it just sends fields like 'login' + 'password' and if
+//    server response is 'OK' - than connection is good.
+//
+//
+//////////////////////////////////////////////////////////////////////
+
+
+// This class makes handshake between Client (us) and Server over UDP socket
 class VPNConnection {
-    private val timeOut = 3000 // milliseconds
-    private val maxPacketSize = 2048
-
-    // Connect to server
-    fun connectToServer(ip: String, port: Int, callback: ConnectionCallback) {
+    private val timeOut = 3000 // Connection timeout in milliseconds
+    // Connect to server. You need to pass server ip, port, and user login, password
+    fun connectToServer(ip: String, port: Int, login: String, password: String, callback: ConnectionCallback) {
         val handler = Handler(Looper.getMainLooper())
+        val connection = UDPConnection()  // UDP connection
 
         // Create a new thread for network operations
         Thread {
             try {
-                // UDP Socket
-                val socket = DatagramSocket()
-                socket.soTimeout = timeOut
+                // Setup connection
+                connection.setup(ip, port, timeOut)
 
-                // Retrieving server IPv4 address
-                val servAddress = InetAddress.getByName(ip)
 
                 /////////// Here must be Diffie-Hellman handshake implemented via class ////////////
                 // 1. Server sends prime number and primitive root (p,g). We must .receive() them
@@ -33,43 +41,36 @@ class VPNConnection {
                 ////////////////////////////////////////////////////////////////////////////////////
 
 
-                // For simplicity for now we just send data and wait "200 OK" from server.
-                // Send "Hello"
-                val msg = "Hello".toByteArray()
-                val sendPacket = DatagramPacket(msg, msg.size, servAddress, port)
-                socket.send(sendPacket)
+                // For simplicity for now we just send data and wait "OK" from server.
+                // Send 'login password'
+                val msg = "$login $password".toByteArray()
+                connection.write(msg)
 
                 // Receive response
-                val receiveData = ByteArray(maxPacketSize)
-                val receivePacket = DatagramPacket(receiveData, receiveData.size)
-                socket.receive(receivePacket)
-                val response = String(receivePacket.data, 0, receivePacket.length)
+                val response = String(connection.read(1500))
 
-                // Check for "ok" response
-                if (response.trim() != "200 OK") {
-                    // Notify UI about failed connection
+                // Check for "OK" response
+                if (response == "OK") { // Connection good
+                    // Notify UI about successful connection
+                    handler.post {
+                        callback.onConnectionResult(true)
+                    }
+
+                } else { // Connection failed
+                    // Notify UI about connection failure
                     handler.post {
                         callback.onConnectionResult(false)
                     }
-                    return@Thread
                 }
-
-                // Close the socket
-                socket.close()
-
-                // Notify UI about successful connection
-                handler.post {
-                    callback.onConnectionResult(true)
-                }
-
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.printStackTrace() // Print exception
 
                 // Notify UI about connection failure
                 handler.post {
                     callback.onConnectionResult(false)
                 }
             }
+            connection.close()
         }.start()
     }
 
