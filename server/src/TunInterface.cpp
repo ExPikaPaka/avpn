@@ -5,7 +5,6 @@ TunInterface::TunInterface(const std::string& interfaceName, const std::string& 
     if (tunFd < 0) {
         throw std::runtime_error("Failed to create TUN interface");
     }
-    configTun(interfaceName, ipAddress, netmask);
 }
 
 TunInterface::~TunInterface() {
@@ -40,20 +39,4 @@ int TunInterface::createTunInterface(const std::string& interfaceName) {
     }
 
     return tun_fd;
-}
-
-void TunInterface::configTun(const std::string& interfaceName, const std::string& ipAddress, const std::string& netmask) {
-    struct sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(ipAddress.c_str());
-
-    std::string command = "ifconfig " + interfaceName + " " + ipAddress + " netmask " + netmask;
-    system(command.c_str());
-
-    std::string routeCommand = "route add -net 0.0.0.0 netmask 0.0.0.0 dev " + interfaceName;
-    system(routeCommand.c_str());
-
-    std::string iptablesCommand = "iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE";
-    system(iptablesCommand.c_str());
 }
