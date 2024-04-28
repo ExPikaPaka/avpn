@@ -30,7 +30,4 @@ private:
 
     // Creates TUN device with specified name
     int createTunInterface(const std::string& interfaceName);
-
-    // Configures TUN device
-    void configTun(const std::string& interfaceName, const std::string& ipAddress, const std::string& netmask);
 };
