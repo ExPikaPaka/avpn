@@ -10,7 +10,6 @@ ThreadPool::ThreadPool(std::size_t numThreads) {
 ThreadPool::~ThreadPool() {
     if (!stop) {
         Destroy();
-        std::cout << "close thread" << std::endl;
     }
 }
 
