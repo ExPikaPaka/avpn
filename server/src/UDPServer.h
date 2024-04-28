@@ -36,10 +36,5 @@ private:
     std::unique_ptr<AuthManager> auth;
 
     void handleClient(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
-
-    struct Client {
-    sockaddr_in addr;
-    bool authorized;
-    };
-    std::vector<Client> clients;
+    void handleGuest(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
 };

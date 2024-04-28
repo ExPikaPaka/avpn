@@ -2,19 +2,29 @@
 
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <utility>
+#include <memory>
 #include <vector>
 #include <arpa/inet.h>
+#include <ctime>
+
+#include "Diffi_Hellman.h"
 
 class AuthManager {
 private:
     // Database. Stores login = password.
-    std::map<std::string, std::string> userdb;
+    std::unordered_map<std::string, std::string> userdb;
 
-    // Stores clientIP = login
-    std::map<uint32_t, std::string> authorizedClients; 
+    struct ClientData {
+        std::time_t lastAccessTime; // time of client access to the server
+        uint64_t key = 0; // Shared key generated during the Diffie-Hellman procedure
+        bool isAuthorized = false; // Is the client authorized
+    };
+
+    // Stores clientIP = ClientData
+    std::unordered_map<uint32_t, ClientData> authorizedClients;
 
 public:
     // Default constructer. Opens DB file and reads it to the program DB.
@@ -23,15 +33,21 @@ public:
     // Check if client login + password is correct.
     bool authenticate(const std::string& message, const sockaddr_in& clientAddr);
 
-    // Check if client with given IP address is authorized
+    // Check if client with given IP address is authorized and if the activity time has expired (10 seconds)
     bool isClientAuthorized(const sockaddr_in& clientAddr);
 
-    // Returns client login by his IP address
-    std::string getClientUsername(const sockaddr_in& clientAddr);
+    // Checks whether the Diffie-Hellman procedure was performed for a client with a given IP address
+    bool isDiffieHellmanPerformed(const sockaddr_in& clientAddr);
+
+    // Returns the public key of the server for the Diffie-Hellman procedure
+    std::string GetPublicServerKey(const std::string& message, const sockaddr_in& clientAddr);
+
+    // Returns the shared key generated during the Diffie-Hellman procedure for the client with this IP address
+    u_int64_t GetSharedKey(const sockaddr_in& clientAddr);
 
 private:
     // Loads DB from file
-    void loadUserDB(const std::string& filename);
+    bool loadUserDB(const std::string& filename);
 
     // Converts string of 'login password' to pair
     std::pair<std::string, std::string> parseCredentials(const std::string& message);
