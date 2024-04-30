@@ -15,7 +15,11 @@ Diffi_Hellman::Diffi_Hellman(const std::string& message) {
     std::uniform_int_distribution<uint64_t> dis(2, p - 1);
     uint64_t privateServerKey = dis(gen);
     publicServerKey = modPow(g, privateServerKey, p);
-    sharedSecret = modPow(publicClientKey, privateServerKey, p);
+    uint64_t sharedSecret = modPow(publicClientKey, privateServerKey, p);
+    std::unique_ptr<SHA256> sha = std::make_unique<SHA256>();
+    sha->update(std::to_string(sharedSecret));
+    std::array<uint8_t, 32> digest = sha->digest();
+    SharedSecret = sha->toString16(digest);
 }
 
 uint64_t Diffi_Hellman::modPow(uint64_t base, uint64_t exp, uint64_t p) {
@@ -34,8 +38,8 @@ uint64_t Diffi_Hellman::getPublicKey() const {
     return publicServerKey;
 }
 
-uint64_t Diffi_Hellman::getSharedSecret() const {
-    return sharedSecret;
+std::string Diffi_Hellman::getSharedSecret() const {
+    return SharedSecret;
 }
 
 std::vector<uint64_t> Diffi_Hellman::parseParams(const std::string& message) {

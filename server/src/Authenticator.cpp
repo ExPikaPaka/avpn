@@ -44,7 +44,7 @@ bool AuthManager::isClientAuthorized(const sockaddr_in& clientAddr) {
 
 bool AuthManager::isDiffieHellmanPerformed(const sockaddr_in& clientAddr) {
     auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
-    return it != authorizedClients.end() && it->second.key != 0;
+    return it != authorizedClients.end() && it->second.key != "";
 }
 
 std::string AuthManager::GetPublicServerKey(const std::string& message, const sockaddr_in& clientAddr) {
@@ -60,7 +60,7 @@ std::string AuthManager::GetPublicServerKey(const std::string& message, const so
     }   
 }
 
-uint64_t AuthManager::GetSharedKey(const sockaddr_in& clientAddr){
+std::string AuthManager::GetSharedKey(const sockaddr_in& clientAddr){
     auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
     if (it == authorizedClients.end()) {
         return 0;
