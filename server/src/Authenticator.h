@@ -19,7 +19,7 @@ private:
 
     struct ClientData {
         std::time_t lastAccessTime; // time of client access to the server
-        uint64_t key = 0; // Shared key generated during the Diffie-Hellman procedure
+        std::string key = ""; // Shared key generated during the Diffie-Hellman procedure
         bool isAuthorized = false; // Is the client authorized
     };
 
@@ -43,7 +43,7 @@ public:
     std::string GetPublicServerKey(const std::string& message, const sockaddr_in& clientAddr);
 
     // Returns the shared key generated during the Diffie-Hellman procedure for the client with this IP address
-    u_int64_t GetSharedKey(const sockaddr_in& clientAddr);
+    std::string GetSharedKey(const sockaddr_in& clientAddr);
 
 private:
     // Loads DB from file

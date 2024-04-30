@@ -5,6 +5,9 @@
 #include <random>
 #include <vector>
 #include <stdexcept>
+#include <memory>
+
+#include "SHA256.h"
 
 class Diffi_Hellman {
 private:
@@ -12,7 +15,7 @@ private:
     uint64_t publicServerKey; 
 
     // Shared secret key generated during the Diffie-Hellman protocol
-    uint64_t sharedSecret; 
+    std::string SharedSecret; 
 
 public:
     // Initializing the Diffi_Hellman object with the parameters specified in the message
@@ -22,7 +25,7 @@ public:
     uint64_t getPublicKey() const;
 
     // Returns the shared secret key
-    uint64_t getSharedSecret() const;
+    std::string getSharedSecret() const;
 
 private:
 

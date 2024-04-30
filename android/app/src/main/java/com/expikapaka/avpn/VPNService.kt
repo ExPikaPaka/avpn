@@ -70,7 +70,7 @@ class VPNService : VpnService() {
         vpnThread = Thread {
             try {
                 // Hardcoded IP server. I setup static IP for my server on the home router
-                val serverAddress = "192.168.0.20"
+                val serverAddress = "192.168.0.120"
                 val serverPort = 25565
 
                 // Create a UDPConnection instance
