@@ -2,6 +2,9 @@ package com.expikapaka.avpn
 
 import android.os.Handler
 import android.os.Looper
+import com.expikapaka.avpn.encryption.AES128
+import com.expikapaka.avpn.encryption.DiffieHellman
+import com.expikapaka.avpn.encryption.SHA256
 import com.expikapaka.avpn.transmission.UDPConnection
 
 
@@ -17,9 +20,14 @@ import kotlin.math.log
 //////////////////////////////////////////////////////////////////////
 
 
+// TODO:
+//   - Remove debug code.
+//
+
+
 // This class makes handshake between Client (us) and Server over UDP socket
 class VPNConnection {
-    private val timeOut = 3000 // Connection timeout in milliseconds
+    private val timeOut = 10000 // Connection timeout in milliseconds
     // Connect to server. You need to pass server ip, port, and user login, password
     fun connectToServer(ip: String, port: Int, login: String, password: String, callback: ConnectionCallback) {
         val handler = Handler(Looper.getMainLooper())
@@ -31,35 +39,56 @@ class VPNConnection {
                 // Setup connection
                 connection.setup(ip, port, timeOut)
 
+                // Generating Diffie-Hellman values
+                val diffi = DiffieHellman()
+                val p = diffi.generatePrime(32)
+                val g = diffi.generatePrimitiveRoot(p)
+                val privateKey = diffi.generatePrivateKey(p)
+                val publicKey = diffi.generatePublicKey(p, g, privateKey)
+                val diffiString = "$p $g $publicKey"
+                //println("P              :" + p)
+                //println("G              :" + g)
+                //println("privateKey     :" + privateKey)
+                //println("publicKey      :" + publicKey)
+                //println("diffiString    :" + diffiString)
 
-                /////////// Here must be Diffie-Hellman handshake implemented via class ////////////
-                // 1. Server sends prime number and primitive root (p,g). We must .receive() them
-                // 2. We generate our public and private key
-                // 3. We receive server's public key
-                // 4. We send to server our public key
-                // 5. We calculate our secret shared key.
-                ////////////////////////////////////////////////////////////////////////////////////
-
-
-                // For simplicity for now we just send data and wait "OK" from server.
-                // Send 'login password'
-                val msg = "$login $password".toByteArray()
-                connection.write(msg)
+                // Send parameters to the server
+                connection.write(diffiString.toByteArray())
 
                 // Receive response
-                val response = String(connection.read(1500))
+                var response = String(connection.read(1500))
+                val sharedSecret = diffi.calculateSharedSecret(response.toULong(), privateKey, p)
+                //println("response       :" + response)
+                //println("sharedSecret   :" + sharedSecret)
+
+                // Calculating key via SHA256
+                val sha = SHA256()
+                val key = sha.getSHA64(sharedSecret.toString())
+
+                // Encrypting authentication fields
+                val aes = AES128()
+                val authString = "$login $password"
+                val authEncrypted = aes.encrypt(authString.toByteArray(), key.toByteArray())
+                //println("key            :" + key)
+                //println("authEncrypted  :" + authEncrypted)
+
+                // Send encrypted auth data to the server
+                connection.write(authEncrypted)
+
+                // Receive server response
+                response = String(connection.read(1500))
 
                 // Check for "OK" response
                 if (response == "OK") { // Connection good
                     // Notify UI about successful connection
                     handler.post {
-                        callback.onConnectionResult(true)
+                        callback.onConnectionResult(true, key)
                     }
 
                 } else { // Connection failed
                     // Notify UI about connection failure
                     handler.post {
-                        callback.onConnectionResult(false)
+                        callback.onConnectionResult(false, null)
                     }
                 }
             } catch (e: Exception) {
@@ -67,7 +96,7 @@ class VPNConnection {
 
                 // Notify UI about connection failure
                 handler.post {
-                    callback.onConnectionResult(false)
+                    callback.onConnectionResult(false, null)
                 }
             }
             connection.close()
@@ -76,6 +105,6 @@ class VPNConnection {
 
     // Callback interface for connection result
     interface ConnectionCallback {
-        fun onConnectionResult(success: Boolean)
+        fun onConnectionResult(success: Boolean, sharedSecret: String?)
     }
 }
