@@ -7,9 +7,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import com.expikapaka.avpn.VPNConnection
-import com.expikapaka.avpn.VPNService
-import com.expikapaka.avpn.transmission.UDPConnection
+import com.expikapaka.avpn.encryption.AES128
 
 
 ///////////// ABOUT THIS PACKAGE /////////////////////////////////////
@@ -25,6 +23,8 @@ import com.expikapaka.avpn.transmission.UDPConnection
 //   - Remove two buttons 'connect' and 'disconnect - use only one
 //       as a switch.
 //   - Create a better looking UI.
+//   - Remove hardcoded text of localIP and localMask. Retrieve
+//       those fields from server. (line 146)
 //
 
 
@@ -37,6 +37,10 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
     private lateinit var disconnectButton: Button
     private lateinit var infoTextView: TextView
     private lateinit var connection: VPNConnection
+    private lateinit var ipEditText: EditText
+    private lateinit var portEditText: EditText
+    private lateinit var loginEditText: EditText
+    private lateinit var passwordEditText: EditText
     private var isVpnServiceRunning = false
 
     // Function that executes only once, when app starts.
@@ -50,6 +54,10 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
         connectButton = findViewById<Button>(R.id.connectButton)
         disconnectButton = findViewById<Button>(R.id.disconnectButton)
         infoTextView = findViewById<TextView>(R.id.infoTextView)
+        ipEditText = findViewById<EditText>(R.id.ipEditText)
+        portEditText = findViewById<EditText>(R.id.portEditText)
+        loginEditText = findViewById<EditText>(R.id.loginEditText)
+        passwordEditText = findViewById<EditText>(R.id.passwordEditText)
 
         // Preparing VPN service
         prepareVpnService()
@@ -72,14 +80,6 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
     // 'Handshake' function between Client and Server. Establish connection.
     private fun connectToServer() {
         try {
-            // Server fields
-            val ipEditText = findViewById<EditText>(R.id.ipEditText)
-            val portEditText = findViewById<EditText>(R.id.portEditText)
-
-            // User fields
-            val loginEditText = findViewById<EditText>(R.id.loginEditText)
-            val passwordEditText = findViewById<EditText>(R.id.passwordEditText)
-
             // Retrieving fields
             val serverIP = ipEditText.text.toString()
             val serverPort = portEditText.text.toString().toInt()
@@ -101,11 +101,16 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
     }
 
     // Start VPN service that redirects all the traffic to the VPN server
-    private fun startVPNService() {
+    private fun startVPNService(serverIP: String, serverPort: Int, localIP: String, localMask: Int, sharedSecret: String) {
         if (!isVpnServiceRunning) {
             // Starting VPN service
             val startIntent = Intent(this, VPNService::class.java)
             startIntent.action = "start"
+            startIntent.putExtra("serverIP", serverIP)
+            startIntent.putExtra("serverPort", serverPort)
+            startIntent.putExtra("localIP", localIP)
+            startIntent.putExtra("localMask", localMask)
+            startIntent.putExtra("sharedSecret", sharedSecret)
             startService(startIntent)
 
             isVpnServiceRunning = true
@@ -133,11 +138,16 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
     }
 
     // Callback which starts VPN service on successful handshake between client and server
-    override fun onConnectionResult(success: Boolean) {
+    override fun onConnectionResult(success: Boolean, sharedSecret: String?) {
         runOnUiThread {
-            isConnected = if (success) {
+            isConnected = if (success && sharedSecret != null) {
                 updatePacketInfo("Connected!")
-                startVPNService()
+                // REMOVE HARDCODED VALUES
+                val localIP = "10.0.0.2"
+                val localMask = 24
+                val serverIP = ipEditText.text.toString()
+                val serverPort = portEditText.text.toString().toInt()
+                startVPNService(serverIP, serverPort, localIP, localMask, sharedSecret)
                 true
             } else {
                 updatePacketInfo("Failed to connect!")
