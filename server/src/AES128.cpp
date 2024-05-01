@@ -18,7 +18,7 @@ std::string AES128::encrypt(const std::string &plainText, const std::string &key
     len = plainText.size();
     // Resize cipherText
     cipherText.resize(len + EVP_CIPHER_block_size(EVP_aes_128_ecb()));
-    // Ecnryption
+    // Encryption
     EVP_EncryptUpdate(ctx, (unsigned char*)&cipherText[0], &len, (const unsigned char*)plainText.c_str(), plainText.size());
     cipherTextLen = len;
 
@@ -31,13 +31,7 @@ std::string AES128::encrypt(const std::string &plainText, const std::string &key
     // Resize cipherText to actual encrypted data size
     cipherText.resize(cipherTextLen);
 
-    // Convert binary data to hex string
-    std::stringstream hexStream;
-    hexStream << std::hex << std::setfill('0');
-    for (unsigned char c : cipherText) {
-        hexStream << std::setw(2) << (int)c;
-    }
-    return hexStream.str();
+    return cipherText;
 }
 
 std::string AES128::decrypt(const std::string &encryptedText, const std::string &key) {
@@ -55,20 +49,11 @@ std::string AES128::decrypt(const std::string &encryptedText, const std::string 
     ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, (const unsigned char*)key.c_str(), NULL);
 
-    // Convert hex string to binary data
-    std::string encryptedData;
-    encryptedData.reserve(encryptedText.length() / 2);
-    for (size_t i = 0; i < encryptedText.length(); i += 2) {
-        unsigned int byte;
-        std::istringstream(encryptedText.substr(i, 2)) >> std::hex >> byte;
-        encryptedData.push_back((unsigned char)byte);
-    }
-
-    len = encryptedData.size();
+    len = encryptedText.size();
     // Resize plainText 
     plainText.resize(len + EVP_CIPHER_block_size(EVP_aes_128_ecb()));
     // Decryption
-    EVP_DecryptUpdate(ctx, (unsigned char*)&plainText[0], &len, (const unsigned char *)encryptedData.c_str(), encryptedData.size());
+    EVP_DecryptUpdate(ctx, (unsigned char*)&plainText[0], &len, (const unsigned char *)encryptedText.c_str(), encryptedText.size());
     plainTextLen = len;
 
     // Finalize decryption
