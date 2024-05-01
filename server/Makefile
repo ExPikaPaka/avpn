@@ -17,7 +17,7 @@ all: $(BUILD_DIR)/$(EXECUTABLE)
 
 # Executable recipe (compiling server.cpp and objects)
 $(BUILD_DIR)/$(EXECUTABLE): $(MAIN) $(OBJFILES) | $(BUILD_DIR)
-	$(COMPILER) $(CFLAGS) -o $@ $^
+	$(COMPILER) $(CFLAGS) -o $@ $^ -lcrypto
 
 # Object files compilation
 $(BUILD_DIR)/%.o: $(SRCDIR)/%.cpp | $(BUILD_DIR)
