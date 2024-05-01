@@ -11,6 +11,7 @@
 #include <ctime>
 
 #include "Diffi_Hellman.h"
+#include "AES128.h"
 
 class AuthManager {
 private:
