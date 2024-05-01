@@ -12,7 +12,8 @@ public:
 	void update(const std::string &data);
 	std::array<uint8_t, 32> digest();
 
-	static std::string toString(const std::array<uint8_t, 32> & digest);
+	static std::string toString64(const std::array<uint8_t, 32> & digest);
+	static std::string toString32(const std::array<uint8_t, 32> & digest);
 	static std::string toString16(const std::array<uint8_t, 32> & digest);
 
 private:

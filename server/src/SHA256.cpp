@@ -143,11 +143,22 @@ void SHA256::revert(std::array<uint8_t, 32> & hash) {
 	}
 }
 
-std::string SHA256::toString(const std::array<uint8_t, 32> & digest) {
+std::string SHA256::toString64(const std::array<uint8_t, 32> & digest) {
 	std::stringstream s;
 	s << std::setfill('0') << std::hex;
 
 	for(uint8_t i = 0 ; i < 32 ; i++) {
+		s << std::setw(2) << (unsigned int)digest[i];
+	}
+
+	return s.str();
+}
+
+std::string SHA256::toString32(const std::array<uint8_t, 32> & digest) {
+	std::stringstream s;
+	s << std::setfill('0') << std::hex;
+
+	for(uint8_t i = 0 ; i < 16 ; i++) {
 		s << std::setw(2) << (unsigned int) digest[i];
 	}
 
@@ -158,7 +169,7 @@ std::string SHA256::toString16(const std::array<uint8_t, 32> & digest) {
 	std::stringstream s;
 	s << std::setfill('0') << std::hex;
 
-	for(uint8_t i = 0 ; i < 16 ; i++) {
+	for(uint8_t i = 0 ; i < 8 ; i++) {
 		s << std::setw(2) << (unsigned int) digest[i];
 	}
 
