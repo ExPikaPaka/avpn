@@ -34,7 +34,16 @@ private:
     std::unique_ptr<ThreadPool> threadPool;
     std::unique_ptr<TunInterface> tun;
     std::unique_ptr<AuthManager> auth;
+    AES128 aes;
+    int MTU = 2400;
 
     void handleClient(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
     void handleGuest(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
+
+    void runClientToServer(const sockaddr_in& clientAddr, socklen_t clientLen);
+    void runServerToClient(const sockaddr_in& clientAddr, socklen_t clientLen);
+
+    void clientToServer(const sockaddr_in& clientAddr, socklen_t clientLen);
+    void serverToClient(const sockaddr_in& clientAddr, socklen_t clientLen);
+
 };
