@@ -7,7 +7,9 @@ AuthManager::AuthManager(const std::string& filename) {
 }
 
 bool AuthManager::authenticate(const std::string& message, const sockaddr_in& clientAddr) {
-    std::pair<std::string, std::string> credentials = parseCredentials(message);
+    AES128 aes;
+    std::string decodedText = aes.decrypt(message, GetSharedKey(clientAddr));
+    std::pair<std::string, std::string> credentials = parseCredentials(decodedText);
 
     auto it = userdb.find(credentials.first);
     if (it != userdb.end() && it->second == credentials.second) {
