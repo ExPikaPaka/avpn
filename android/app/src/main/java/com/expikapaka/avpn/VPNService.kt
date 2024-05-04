@@ -3,14 +3,12 @@ package com.expikapaka.avpn
 import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.expikapaka.avpn.encryption.AES128
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.IOException
 import com.expikapaka.avpn.transmission.IConnection
 import com.expikapaka.avpn.transmission.UDPConnection
-import com.expikapaka.avpn.util.displayPacketData
-import com.expikapaka.avpn.util.displayPacketInfo
 import kotlin.concurrent.thread
 
 
@@ -41,6 +39,7 @@ class VPNService : VpnService() {
     private var rxCnt = 0                    // Receive packet count
     private val maxPacketSize = 2400         // MTU
     private var timeOut: Long = 60000        // 60 seconds. If after last TX packet we have no RX - then disconnect
+    private var useTimeOut = false           // Timeout boolean
     private val routeIP = "0.0.0.0"          // Route address
     private val routeMask = 0                // Route mask
     private var serverIP = ""                // VPN server address
@@ -132,6 +131,8 @@ class VPNService : VpnService() {
                     runServerToClient(vpnOutput, connection)
                 }
 
+                // Notify the listener that the service has started
+                notifyServiceStarted()
             } catch (e: Exception) {
                 // Handle VPN connection errors
                 e.printStackTrace()
@@ -160,9 +161,11 @@ class VPNService : VpnService() {
     // Reads local TUN device and sends packet to server via connection
     private fun clientToServer(vpnInputStream: FileInputStream, serverConnection: IConnection) {
         // Check timeout
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastTimeResetTimer > timeOut) {
-            stopVPN()
+        if(useTimeOut) {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastTimeResetTimer > timeOut) {
+                stopVPN()
+            }
         }
 
         // Read form Us and send to Server
@@ -209,8 +212,10 @@ class VPNService : VpnService() {
     // Receive packets from server and write to local TUN device
     private fun serverToClient(vpnOutputStream: FileOutputStream, serverConnection: IConnection) {
         val messageData = serverConnection.read(maxPacketSize)
-        lastTimeResetTimer = System.currentTimeMillis() // Reset timer
         rxCnt++ // Increment receive count
+        if(useTimeOut) {
+            lastTimeResetTimer = System.currentTimeMillis() // Reset timer
+        }
 
         // Output (DEBUG)
         //synchronized(cloc) {
@@ -261,5 +266,19 @@ class VPNService : VpnService() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+
+        // Notify the listener that the service has stopped
+        notifyServiceStopped()
+    }
+
+    private fun notifyServiceStarted() {
+        val intent = Intent("VPN_SERVICE_STARTED")
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    private fun notifyServiceStopped() {
+        val intent = Intent("VPN_SERVICE_STOPPED")
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 }
+
