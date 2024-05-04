@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">AVPN</string>
+    <string name="connect_button">connect</string>
+    <string name="disconnect_button">disconnect</string>
+    <string name="vpn_address">VPN Address</string>
+    <string name="vpn_port">VPN Port</string>
+    <string name="login">Login</string>
+    <string name="password">Password</string>
 </resources>
