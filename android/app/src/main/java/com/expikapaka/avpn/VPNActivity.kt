@@ -1,12 +1,16 @@
 package com.expikapaka.avpn
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.VpnService
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.expikapaka.avpn.encryption.AES128
 
 
@@ -20,21 +24,17 @@ import com.expikapaka.avpn.encryption.AES128
 
 
 // TODO:
-//   - Remove two buttons 'connect' and 'disconnect - use only one
-//       as a switch.
-//   - Create a better looking UI.
 //   - Remove hardcoded text of localIP and localMask. Retrieve
 //       those fields from server. (line 146)
 //
 
 
 // Activity class (UI + interaction). Basically that's our main app
-class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
+class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback {
     // Some fields that program uses for his logic
     private val VPN_PREPARE_REQUEST = 1
     private var isConnected = false
     private lateinit var connectButton: Button
-    private lateinit var disconnectButton: Button
     private lateinit var infoTextView: TextView
     private lateinit var connection: VPNConnection
     private lateinit var ipEditText: EditText
@@ -43,6 +43,15 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
     private lateinit var passwordEditText: EditText
     private var isVpnServiceRunning = false
 
+    private val serviceStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                "VPN_SERVICE_STARTED" -> onVPNServiceStarted()
+                "VPN_SERVICE_STOPPED" -> onVPNServiceStopped()
+            }
+        }
+    }
+
     // Function that executes only once, when app starts.
     // It properly creates app.
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,9 +59,16 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.vpn_activity_layout)
 
+        // Register broadcast receiver
+        val filter = IntentFilter().apply {
+            addAction("VPN_SERVICE_STARTED")
+            addAction("VPN_SERVICE_STOPPED")
+        }
+        LocalBroadcastManager.getInstance(this).registerReceiver(serviceStateReceiver, filter)
+
+
         // Retrieve UI elements
         connectButton = findViewById<Button>(R.id.connectButton)
-        disconnectButton = findViewById<Button>(R.id.disconnectButton)
         infoTextView = findViewById<TextView>(R.id.infoTextView)
         ipEditText = findViewById<EditText>(R.id.ipEditText)
         portEditText = findViewById<EditText>(R.id.portEditText)
@@ -66,31 +82,35 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
 
         // Connect button listener
         connectButton.setOnClickListener {
-            connectToServer()
+            connectDisconnect()
         }
+    }
 
-        // Disconnect button listener
-        disconnectButton.setOnClickListener {
+    private fun connectDisconnect() {
+        if (!isVpnServiceRunning) {
+            connectToServer()
+        } else {
             stopVPNService()
         }
     }
 
-
-
     // 'Handshake' function between Client and Server. Establish connection.
     private fun connectToServer() {
         try {
-            // Retrieving fields
-            val serverIP = ipEditText.text.toString()
-            val serverPort = portEditText.text.toString().toInt()
-            val login = loginEditText.text.toString()
-            val password = passwordEditText.text.toString()
+            if(!isConnected) {
+                // Retrieving fields
+                val serverIP = ipEditText.text.toString()
+                val serverPort = portEditText.text.toString().toInt()
+                val login = loginEditText.text.toString()
+                val password = passwordEditText.text.toString()
 
-            // Connecting
-            connection.connectToServer(serverIP, serverPort, login, password, this)
+                // Connecting
+                connection.connectToServer(serverIP, serverPort, login, password, this)
+                isConnected = true
 
-            // Updating user Info field
-            updatePacketInfo("Connecting...")
+                // Updating user Info field
+                updatePacketInfo("Connecting...")
+            }
         } catch (e: Exception) {
             // Notify user about error
             updatePacketInfo("Failed to connect!")
@@ -112,14 +132,9 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
             startIntent.putExtra("localMask", localMask)
             startIntent.putExtra("sharedSecret", sharedSecret)
             startService(startIntent)
-
-            isVpnServiceRunning = true
-
-            // Notify user
-            updatePacketInfo("VPN Service started.")
         } else {
             // Temporary. Later will use only one button that works like a switch.
-            updatePacketInfo("VPN Service is already running.")
+            updatePacketInfo("VPN Service is already running")
         }
     }
 
@@ -130,10 +145,8 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
             val stopIntent = Intent(this, VPNService::class.java)
             stopIntent.action = "stop"
             startService(stopIntent)
-            isVpnServiceRunning = false
-            updatePacketInfo("VPN Service stopped.")
         } else {
-            updatePacketInfo("VPN Service is not running.")
+            updatePacketInfo("VPN Service is not running")
         }
     }
 
@@ -172,5 +185,21 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback  {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    // VPN service started callback
+    private fun onVPNServiceStarted() {
+        isVpnServiceRunning = true
+        updatePacketInfo("VPN Service started")
+        connectButton.text= getString(R.string.disconnect_button)
+    }
+
+    // VPN service stopped callback
+    private fun onVPNServiceStopped() {
+        // Handle UI updates or other actions when the VPN service stops
+        isVpnServiceRunning = false
+        isConnected = false
+        updatePacketInfo("VPN Service stopped")
+        connectButton.text= getString(R.string.connect_button)
     }
 }
