@@ -151,15 +151,13 @@ class VPNActivity : AppCompatActivity(), VPNConnection.ConnectionCallback {
     }
 
     // Callback which starts VPN service on successful handshake between client and server
-    override fun onConnectionResult(success: Boolean, sharedSecret: String?) {
+    override fun onConnectionResult(success: Boolean, sharedSecret: String?, localIP: String?, serverPort: Int?) {
         runOnUiThread {
-            isConnected = if (success && sharedSecret != null) {
+            isConnected = if (success && sharedSecret != null && localIP != null && serverPort != null) {
                 updatePacketInfo("Connected!")
                 // REMOVE HARDCODED VALUES
-                val localIP = "10.0.0.2"
                 val localMask = 24
                 val serverIP = ipEditText.text.toString()
-                val serverPort = portEditText.text.toString().toInt()
                 startVPNService(serverIP, serverPort, localIP, localMask, sharedSecret)
                 true
             } else {
