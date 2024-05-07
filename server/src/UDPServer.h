@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <thread>
 #include <vector>
-#include <mutex>
 #include <memory>
+#include <netinet/ip.h>
 
 #include "ThreadPool.h"
 #include "TunInterface.h"
@@ -23,7 +23,7 @@ public:
     UDPServer(uint16_t port, size_t numThreads);
     ~UDPServer();
 
-    int createSocket(uint16_t port);
+    int createSocket();
     void closeSocket(int socketFd);
     bool start();
     void run();
@@ -35,15 +35,18 @@ private:
     std::unique_ptr<TunInterface> tun;
     std::unique_ptr<AuthManager> auth;
     AES128 aes;
-    int MTU = 2400;
+    int MTU = 1500;
 
-    void handleClient(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
+    // Function of processing unauthorized client packets
     void handleGuest(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
 
-    void runClientToServer(const sockaddr_in& clientAddr, socklen_t clientLen);
-    void runServerToClient(const sockaddr_in& clientAddr, socklen_t clientLen);
+    // Function of processing authorized client packets
+    void handleClient(const int ClientSocket, const sockaddr_in& clientAddr, socklen_t clientLen);
 
-    void clientToServer(const sockaddr_in& clientAddr, socklen_t clientLen);
-    void serverToClient(const sockaddr_in& clientAddr, socklen_t clientLen);
+    // Read from tun interface and send packets to clients
+    void runReadTun();
+
+    //The function of checking customer activity within 60 seconds
+    void runCheckClientActivity();
 
 };
