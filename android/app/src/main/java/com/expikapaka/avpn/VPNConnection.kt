@@ -46,20 +46,28 @@ class VPNConnection {
                 val privateKey = diffi.generatePrivateKey(p)
                 val publicKey = diffi.generatePublicKey(p, g, privateKey)
                 val diffiString = "$p $g $publicKey"
-                //println("P              :" + p)
-                //println("G              :" + g)
-                //println("privateKey     :" + privateKey)
-                //println("publicKey      :" + publicKey)
-                //println("diffiString    :" + diffiString)
+                println("P              :" + p)
+                println("G              :" + g)
+                println("privateKey     :" + privateKey)
+                println("publicKey      :" + publicKey)
+                println("diffiString    :" + diffiString)
 
                 // Send parameters to the server
                 connection.write(diffiString.toByteArray())
 
                 // Receive response
                 var response = String(connection.read(1500))
-                val sharedSecret = diffi.calculateSharedSecret(response.toULong(), privateKey, p)
-                //println("response       :" + response)
-                //println("sharedSecret   :" + sharedSecret)
+
+                // Split the response string into 'sharedSecret' and 'localIP' using space as delimiter
+                var parts = response.split(" ")
+
+                // Extract 'sharedSecret' and 'localIP' from the parts
+                val sharedSecretString = parts[0]
+                val localIPString = parts[1]
+
+                println("response       :" + response)
+                val sharedSecret = diffi.calculateSharedSecret(sharedSecretString.toULong(), privateKey, p)
+                println("sharedSecret   :" + sharedSecret)
 
                 // Calculating key via SHA256
                 val sha = SHA256()
@@ -69,26 +77,32 @@ class VPNConnection {
                 val aes = AES128()
                 val authString = "$login $password"
                 val authEncrypted = aes.encrypt(authString.toByteArray(), key.toByteArray())
-                //println("key            :" + key)
-                //println("authEncrypted  :" + authEncrypted)
+                println("key            :" + key)
+                println("authEncrypted  :" + authEncrypted)
 
                 // Send encrypted auth data to the server
                 connection.write(authEncrypted)
 
                 // Receive server response
                 response = String(connection.read(1500))
+                println("response       :" + response)
+                parts = response.split(" ")
+
+                // Extract 'OK' and 'port'
+                val okMessage = parts[0]
+                val vpnServicePort = parts[1].toInt()
 
                 // Check for "OK" response
-                if (response == "OK") { // Connection good
+                if (okMessage == "OK") { // Connection good
                     // Notify UI about successful connection
                     handler.post {
-                        callback.onConnectionResult(true, key)
+                        callback.onConnectionResult(true, key, localIPString, vpnServicePort)
                     }
 
                 } else { // Connection failed
                     // Notify UI about connection failure
                     handler.post {
-                        callback.onConnectionResult(false, null)
+                        callback.onConnectionResult(false, null, null, null)
                     }
                 }
             } catch (e: Exception) {
@@ -96,7 +110,7 @@ class VPNConnection {
 
                 // Notify UI about connection failure
                 handler.post {
-                    callback.onConnectionResult(false, null)
+                    callback.onConnectionResult(false, null, null, null)
                 }
             }
             connection.close()
@@ -105,6 +119,6 @@ class VPNConnection {
 
     // Callback interface for connection result
     interface ConnectionCallback {
-        fun onConnectionResult(success: Boolean, sharedSecret: String?)
+        fun onConnectionResult(success: Boolean, sharedSecret: String?, localIP: String?, serverPort: Int?)
     }
 }
