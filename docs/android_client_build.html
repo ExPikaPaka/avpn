@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>android_client_build</title>
+	<style>
+		html {
+		  color: #ddd; /* Text color */
+		  background-color: #2c2d37; /* Background color */
+		}
+		body {
+		  margin: 0 auto;
+		  max-width: 50em;
+		  padding-left: 50px;
+		  padding-right: 50px;
+		  padding-top: 50px;
+		  padding-bottom: 50px;
+		  hyphens: auto;
+		  overflow-wrap: break-word;
+		  text-rendering: optimizeLegibility;
+		  font-kerning: normal;
+		  background-color: #2c2d37; /* Background color */
+		}
+		@media (max-width: 600px) {
+		  body {
+			font-size: 0.9em;
+			padding: 12px;
+		  }
+		  h1 {
+			font-size: 1.8em;
+		  }
+		}
+		@media print {
+		  html {
+			background-color: #fff; /* Background color */
+		  }
+		  body {
+			background-color: #fff; /* Background color */
+			color: #000; /* Text color */
+			font-size: 12pt;
+		  }
+		  p, h2, h3 {
+			orphans: 3;
+			widows: 3;
+		  }
+		  h2, h3, h4 {
+			page-break-after: avoid;
+		  }
+		}
+		p {
+		  margin: 1em 0;
+		}
+		a {
+		  color: #ccc; /* Link color */
+		}
+		a:visited {
+		  color: #ccc; /* Visited link color */
+		}
+		img {
+		  max-width: 100%;
+		}
+		svg {
+		  height: auto;
+		  max-width: 100%;
+		}
+		h1, h2, h3, h4, h5, h6 {
+		  margin-top: 1.4em;
+		}
+		h5, h6 {
+		  font-size: 1em;
+		  font-style: italic;
+		}
+		h6 {
+		  font-weight: normal;
+		}
+		ol, ul {
+		  padding-left: 1.7em;
+		  margin-top: 1em;
+		}
+		li > ol, li > ul {
+		  margin-top: 0;
+		}
+		blockquote {
+		  margin: 1em 0 1em 1.7em;
+		  padding-left: 1em;
+		  border-left: 2px solid #555; /* Quote border color */
+		  color: #999; /* Quote text color */
+		}
+		code {
+		  font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+		  font-size: 85%;
+		  margin: 0;
+		  hyphens: manual;
+		  background-color: #424249; /* Code background color */
+		  color: #d7b17c; /* Code text color */
+		  padding: 0.2em 0.4em; /* Code padding */
+		  border-radius: 4px; /* Code border radius */
+		}
+		pre {
+		  margin: 1em 0;
+		  overflow: auto;
+		}
+		pre code {
+		  padding: 0;
+		  overflow: visible;
+		  overflow-wrap: normal;
+		}
+		.sourceCode {
+		 background-color: #424249; /* Code background color */
+		 overflow: visible;
+		}
+		hr {
+		  background-color: #444; /* Horizontal rule color */
+		  border: none;
+		  height: 1px;
+		  margin: 1em 0;
+		}
+		table {
+		  margin: 1em 0;
+		  border-collapse: collapse;
+		  width: 100%;
+		  overflow-x: auto;
+		  display: block;
+		  font-variant-numeric: lining-nums tabular-nums;
+		}
+		table caption {
+		  margin-bottom: 0.75em;
+		}
+		tbody {
+		  margin-top: 0.5em;
+		  border-top: 1px solid #444; /* Table border color */
+		  border-bottom: 1px solid #444; /* Table border color */
+		}
+		th {
+		  border-top: 1px solid #444; /* Table border color */
+		  padding: 0.25em 0.5em 0.25em 0.5em;
+		}
+		td {
+		  padding: 0.125em 0.5em 0.25em 0.5em;
+		}
+		header {
+		  margin-bottom: 4em;
+		  text-align: center;
+		}
+		#TOC li {
+		  list-style: none;
+		}
+		#TOC ul {
+		  padding-left: 1.3em;
+		}
+		#TOC > ul {
+		  padding-left: 0;
+		}
+		#TOC a:not(:hover) {
+		  text-decoration: none;
+		}
+		code{white-space: pre-wrap;}
+		span.smallcaps{font-variant: small-caps;}
+		div.columns{display: flex; gap: min(4vw, 1.5em);}
+		div.column{flex: auto; overflow-x: auto;}
+		div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+		/* The extra [class] is a hack that increases specificity enough to
+		   override a similar rule in reveal.js */
+		ul.task-list[class]{list-style: none;}
+		ul.task-list li input[type="checkbox"] {
+		  font-size: inherit;
+		  width: 0.8em;
+		  margin: 0 0.8em 0.2em -1.6em;
+		  vertical-align: middle;
+		}
+		.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+	</style>
+</head>
+<body>
+<h1 id="android-vpn-client">Android VPN client</h1>
+<p>Welcome to our Android app! This README will guide you through the
+steps to build and run the app using Android Studio.</p>
+<h2 id="build-instructions">Build Instructions</h2>
+<p>Follow these steps to build and run the app:</p>
+<ol type="1">
+<li><p><strong>Open Android Studio</strong>: Launch Android Studio on
+your computer.</p></li>
+<li><p><strong>Select ‘Open’ Button</strong>: Click on the “Open” button
+to open an existing project.</p></li>
+<li><p><strong>Navigate to ‘android’ Folder</strong>: In the file
+dialog, navigate to the location of the ‘android’ folder within your
+project directory.</p></li>
+<li><p><strong>Click ‘OK’ Button</strong>: Confirm by clicking the “OK”
+button to open the project.</p></li>
+<li><p><strong>Wait for Project to Open</strong>: Allow some time for
+the project to open. You may encounter some errors initially, but they
+should resolve automatically.</p></li>
+<li><p><strong>Sync Gradle Files</strong>: If you encounter the ‘Invalid
+Gradle JDK configuration found’ error, click on the “Sync Project with
+Gradle Files” button and wait for the sync process to complete.</p></li>
+<li><p><strong>Project Configured</strong>: Once the project is
+configured, you can proceed to build and start the app.</p></li>
+</ol>
+<h2 id="documentation">Documentation</h2>
+<p>Our code is well-documented with clear explanations and instructions
+provided within each file. Simply open any code file to access its
+documentation and understand its purpose and functionality.</p>
+</body>
+</html>
