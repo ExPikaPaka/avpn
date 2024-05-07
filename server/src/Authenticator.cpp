@@ -8,13 +8,13 @@ AuthManager::AuthManager(const std::string& filename) {
 
 bool AuthManager::authenticate(const std::string& message, const sockaddr_in& clientAddr) {
     AES128 aes;
-    std::string decodedText = aes.decrypt(message, GetSharedKey(clientAddr));
+    std::string decodedText = aes.decrypt(message, getSharedKey(clientAddr));
     std::pair<std::string, std::string> credentials = parseCredentials(decodedText);
 
     auto it = userdb.find(credentials.first);
     if (it != userdb.end() && it->second == credentials.second) {
         auto iter = authorizedClients.find(clientAddr.sin_addr.s_addr);
-        iter->second.lastAccessTime = std::time(nullptr);
+        iter->second.lastAccessTime = std::chrono::steady_clock::now();
         iter->second.isAuthorized = true;
         std::cout << "The user " << credentials.first << " is authorized" << std::endl;
         return true;
@@ -31,16 +31,6 @@ bool AuthManager::isClientAuthorized(const sockaddr_in& clientAddr) {
         return false;
     }
 
-    // Check if the activity time has expired (10 seconds)
-    std::time_t currentTime = std::time(nullptr);
-    std::time_t lastActivityTime = it->second.lastAccessTime;
-    if (difftime(currentTime, lastActivityTime) > 10) {
-        authorizedClients.erase(it);
-        std::cout << "Client disconnect" << std::endl;
-        return false;
-    }
-    it->second.lastAccessTime = std::time(nullptr);
-
     return it->second.isAuthorized;
 }
 
@@ -49,25 +39,105 @@ bool AuthManager::isDiffieHellmanPerformed(const sockaddr_in& clientAddr) {
     return it != authorizedClients.end() && it->second.key != "";
 }
 
-std::string AuthManager::GetPublicServerKey(const std::string& message, const sockaddr_in& clientAddr) {
+std::string AuthManager::getPublicServerKey(const std::string& message, const sockaddr_in& clientAddr) {
     try {
         std::unique_ptr<Diffi_Hellman> diffiHellman = std::make_unique<Diffi_Hellman>(message);
 
-        authorizedClients[clientAddr.sin_addr.s_addr] = {std::time(nullptr), diffiHellman->getSharedSecret(), false};
+        // Знайти вільну IP-адресу
+        in_addr_t freeIP = findFreeIP();
+        if (freeIP == 0) {
+            std::cerr << "No free IP addresses available" << std::endl;
+            return "No free IP addresses available";
+        }
 
-        return std::to_string(diffiHellman->getPublicKey());
+        authorizedClients[clientAddr.sin_addr.s_addr] = {freeIP, std::chrono::steady_clock::now(), diffiHellman->getSharedSecret(), false, -1, &clientAddr};
+        std::string publicKeyAndIP = std::to_string(diffiHellman->getPublicKey()) + " " + inet_ntoa(*(in_addr*)&freeIP);
+        return publicKeyAndIP;
     } catch(const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return "Invalid message parameters";
-    }   
+    }
 }
 
-std::string AuthManager::GetSharedKey(const sockaddr_in& clientAddr){
+
+in_addr_t AuthManager::findFreeIP() {
+    in_addr_t startIP = inet_addr("10.0.0.2");
+    in_addr_t endIP = inet_addr("10.0.0.255");
+
+    for (in_addr_t ip = ntohl(startIP); ip <= ntohl(endIP); ++ip) {
+        in_addr_t currentIP = htonl(ip);
+        bool ipUsed = false;
+
+        for (const auto& client : authorizedClients) {
+            if (client.second.localIP == currentIP) {
+                ipUsed = true;
+                break;
+            }
+        }
+
+        if (!ipUsed) {
+            return currentIP;
+        }
+    }
+
+    return 0;
+}
+
+std::string AuthManager::getSharedKey(const sockaddr_in& clientAddr) {
     auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
     if (it == authorizedClients.end()) {
         return 0;
     }
     return it->second.key;
+}
+
+int AuthManager::getClientSocket(const sockaddr_in& clientAddr) {
+    auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
+    if (it == authorizedClients.end()) {
+        return 0;
+    }
+    return it->second.socketFd;
+}
+
+void AuthManager::addClientSocket(const sockaddr_in& clientAddr, int socketFd) {
+    auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
+    if (it != authorizedClients.end()) {
+        it->second.socketFd = socketFd;
+        it->second.publicAddr = &clientAddr;
+    } else {
+        throw std::runtime_error("Failed add client socket");
+    }
+}
+
+void AuthManager::checkClientActivity() {
+    auto currentTime = std::chrono::steady_clock::now();
+
+    for (auto it = authorizedClients.begin(); it != authorizedClients.end();) {
+        auto lastActivityTime = it->second.lastAccessTime;
+        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastActivityTime).count() > 60) {
+            it = authorizedClients.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void AuthManager::updateClientActivity(const sockaddr_in& clientAddr) {
+    auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
+    if (it != authorizedClients.end()) {
+        it->second.lastAccessTime = std::chrono::steady_clock::now();
+    } else {
+        throw std::runtime_error("Client dont found");
+    }
+}
+
+sockaddr_in AuthManager::getClientPublicAddr(in_addr_t localIP) {
+    for (const auto& [clientAddr, clientData] : authorizedClients) {
+        if (clientData.localIP == localIP) {
+            return *clientData.publicAddr;
+        }
+    }
+    throw std::runtime_error("Local IP client is not found");
 }
 
 bool AuthManager::loadUserDB(const std::string& filename) {
