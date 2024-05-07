@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>testing_speed</title>
+	<style>
+		html {
+		  color: #ddd; /* Text color */
+		  background-color: #2c2d37; /* Background color */
+		}
+		body {
+		  margin: 0 auto;
+		  max-width: 50em;
+		  padding-left: 50px;
+		  padding-right: 50px;
+		  padding-top: 50px;
+		  padding-bottom: 50px;
+		  hyphens: auto;
+		  overflow-wrap: break-word;
+		  text-rendering: optimizeLegibility;
+		  font-kerning: normal;
+		  background-color: #2c2d37; /* Background color */
+		}
+		@media (max-width: 600px) {
+		  body {
+			font-size: 0.9em;
+			padding: 12px;
+		  }
+		  h1 {
+			font-size: 1.8em;
+		  }
+		}
+		@media print {
+		  html {
+			background-color: #fff; /* Background color */
+		  }
+		  body {
+			background-color: #fff; /* Background color */
+			color: #000; /* Text color */
+			font-size: 12pt;
+		  }
+		  p, h2, h3 {
+			orphans: 3;
+			widows: 3;
+		  }
+		  h2, h3, h4 {
+			page-break-after: avoid;
+		  }
+		}
+		p {
+		  margin: 1em 0;
+		}
+		a {
+		  color: #ccc; /* Link color */
+		}
+		a:visited {
+		  color: #ccc; /* Visited link color */
+		}
+		img {
+		  max-width: 100%;
+		}
+		svg {
+		  height: auto;
+		  max-width: 100%;
+		}
+		h1, h2, h3, h4, h5, h6 {
+		  margin-top: 1.4em;
+		}
+		h5, h6 {
+		  font-size: 1em;
+		  font-style: italic;
+		}
+		h6 {
+		  font-weight: normal;
+		}
+		ol, ul {
+		  padding-left: 1.7em;
+		  margin-top: 1em;
+		}
+		li > ol, li > ul {
+		  margin-top: 0;
+		}
+		blockquote {
+		  margin: 1em 0 1em 1.7em;
+		  padding-left: 1em;
+		  border-left: 2px solid #555; /* Quote border color */
+		  color: #999; /* Quote text color */
+		}
+		code {
+		  font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+		  font-size: 85%;
+		  margin: 0;
+		  hyphens: manual;
+		  background-color: #424249; /* Code background color */
+		  color: #d7b17c; /* Code text color */
+		  padding: 0.2em 0.4em; /* Code padding */
+		  border-radius: 4px; /* Code border radius */
+		}
+		pre {
+		  margin: 1em 0;
+		  overflow: auto;
+		}
+		pre code {
+		  padding: 0;
+		  overflow: visible;
+		  overflow-wrap: normal;
+		}
+		.sourceCode {
+		 background-color: #424249; /* Code background color */
+		 overflow: visible;
+		}
+		hr {
+		  background-color: #444; /* Horizontal rule color */
+		  border: none;
+		  height: 1px;
+		  margin: 1em 0;
+		}
+		table {
+		  margin: 1em 0;
+		  border-collapse: collapse;
+		  width: 100%;
+		  overflow-x: auto;
+		  display: block;
+		  font-variant-numeric: lining-nums tabular-nums;
+		}
+		table caption {
+		  margin-bottom: 0.75em;
+		}
+		tbody {
+		  margin-top: 0.5em;
+		  border-top: 1px solid #444; /* Table border color */
+		  border-bottom: 1px solid #444; /* Table border color */
+		}
+		th {
+		  border-top: 1px solid #444; /* Table border color */
+		  padding: 0.25em 0.5em 0.25em 0.5em;
+		}
+		td {
+		  padding: 0.125em 0.5em 0.25em 0.5em;
+		}
+		header {
+		  margin-bottom: 4em;
+		  text-align: center;
+		}
+		#TOC li {
+		  list-style: none;
+		}
+		#TOC ul {
+		  padding-left: 1.3em;
+		}
+		#TOC > ul {
+		  padding-left: 0;
+		}
+		#TOC a:not(:hover) {
+		  text-decoration: none;
+		}
+		code{white-space: pre-wrap;}
+		span.smallcaps{font-variant: small-caps;}
+		div.columns{display: flex; gap: min(4vw, 1.5em);}
+		div.column{flex: auto; overflow-x: auto;}
+		div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+		/* The extra [class] is a hack that increases specificity enough to
+		   override a similar rule in reveal.js */
+		ul.task-list[class]{list-style: none;}
+		ul.task-list li input[type="checkbox"] {
+		  font-size: inherit;
+		  width: 0.8em;
+		  margin: 0 0.8em 0.2em -1.6em;
+		  vertical-align: middle;
+		}
+		.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+	</style>
+</head>
+<body>
+<h1 id="speed-testing">Speed Testing</h1>
+<p>When it comes to evaluating network performance, conducting speed
+tests is essential. Speed tests help gauge the efficiency and
+reliability of your internet connection. Here’s how you can perform
+speed tests:</p>
+<h2 id="tools-and-methods">Tools and Methods</h2>
+<h3 id="online-speed-test-websites">1. Online Speed Test Websites</h3>
+<p>There are numerous websites dedicated to conducting speed tests. Some
+popular options include: - <a
+href="https://www.speedtest.net/">Speedtest by Ookla</a> - <a
+href="https://fast.com/">Fast.com</a></p>
+<h3 id="built-in-router-tests">2. Built-in Router Tests</h3>
+<p>Many modern routers come equipped with built-in speed testing
+features. Check your router’s documentation or admin interface to access
+this functionality.</p>
+<h2 id="conducting-a-speed-test">Conducting a Speed Test</h2>
+<ol type="1">
+<li><p><strong>Select a Testing Method</strong>: Choose one of the
+aforementioned tools or methods based on your preference and device
+compatibility.</p></li>
+<li><p><strong>Initiate the Test</strong>: Start the speed test tool or
+app. It will typically measure your download speed, upload speed, and
+ping latency.</p></li>
+<li><p><strong>Analyze the Results</strong>: Once the test is complete,
+review the results to assess your network performance. Look for:</p>
+<ul>
+<li>Download Speed: The rate at which data is transferred from the
+internet to your device.</li>
+<li>Upload Speed: The rate at which data is transferred from your device
+to the internet.</li>
+<li>Ping Latency: The time it takes for a data packet to travel from
+your device to the test server and back. Lower ping values indicate
+better responsiveness.</li>
+</ul></li>
+</ol>
+<h2 id="speed-test-results">Speed Test Results</h2>
+<p><strong>Testing on Different Devices with Different Android
+Versions</strong>: - We conducted tests on a range of devices with
+varying Android versions to measure performance consistency. We noticed
+small variations, but newer devices might be faster because they’re
+designed better and have improved software.</p>
+<p><strong>Long-Term VPN Performance</strong>: - Our thorough testing,
+encompassing extensive usage in activities like gaming, browsing, and
+video streaming, underscores the VPN’s steadfast and dependable
+performance. We maintained continuous VPN connections for several hours
+and left devices connected for a full day, verifying its uninterrupted
+operation and excellent functionality.</p>
+<p><strong>Simultaneous Testing</strong>: - Evaluating multiple devices
+concurrently provided insights into network performance under heavy
+usage. When there are multiple devices, they share maximum speed
+specified by your internet provider.</p>
+<p><strong>Router Variance</strong>: - Testing on diverse home routers
+with varying speeds unveiled the impact of hardware and configurations
+on performance. The maximum VPN speed is contingent upon the Wi-Fi
+version of your router and phone, as well as the maximum speed provided
+by your internet service provider.</p>
+<p><strong>VPN speed test example</strong>. We tested the speed on a
+mid-range phone. Keep in mind that the server runs on a virtual machine,
+so the actual performance should be higher. Additionally, the router’s
+maximum Wi-Fi speed is 25 Mb/s, while the internet provider’s maximum is
+100 Mb/s.</p>
+<figure>
+<img src="assets/testing_vpn.png" alt="Image showing vpn speed test" />
+<figcaption aria-hidden="true">Image showing vpn speed test</figcaption>
+</figure>
+<p>In our setup, after conducting 10 tests at various times, we noticed
+a decrease in maximum speed by around 20-30% on a router with a maximum
+speed of 25 MB/s.</p>
+<p>Conversely, when testing on a router with a speed of 300 Mb/s, we
+observed significantly higher results.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>While VPN may experience a slight decrease in speed, it offers
+numerous benefits such as enhanced security, anonymity, and privacy.</p>
+</body>
+</html>
