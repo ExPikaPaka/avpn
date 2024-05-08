@@ -1,2 +1,5 @@
 # Ignoring build directory
 /build/
+
+# Ignoring logs directory
+/logs/
