@@ -113,6 +113,7 @@ void UDPServer::handleGuest(std::string message, const sockaddr_in& clientAddr, 
 
 void UDPServer::handleClient(const int ClientSocket, const sockaddr_in& clientAddr, socklen_t clientLen) {
     auth->updateClientActivity(clientAddr);
+    std::cout << "Client " << inet_ntoa(clientAddr.sin_addr) << " connected" << std::endl;
     char buffer[MTU];
     while (auth->isClientAuthorized(clientAddr)) {
         try {

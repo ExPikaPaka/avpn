@@ -1,6 +1,6 @@
 #include "TunInterface.h"
 
-TunInterface::TunInterface(const std::string& interfaceName, const std::string& ipAddress, const std::string& netmask) {
+TunInterface::TunInterface(const std::string& interfaceName) {
     tunFd = createTunInterface(interfaceName);
     if (tunFd < 0) {
         throw std::runtime_error("Failed to create TUN interface");
@@ -9,7 +9,6 @@ TunInterface::TunInterface(const std::string& interfaceName, const std::string& 
 
 TunInterface::~TunInterface() {
     close(tunFd);
-    std::cout << "close tun" << std::endl;
 }
 
 int TunInterface::read(char* buffer, int bufferSize) {
@@ -18,6 +17,10 @@ int TunInterface::read(char* buffer, int bufferSize) {
 
 int TunInterface::write(const char* data, int dataSize) {
     return ::write(tunFd, data, dataSize);
+}
+
+int TunInterface::getFd() {
+    return tunFd;
 }
 
 int TunInterface::createTunInterface(const std::string& interfaceName) {

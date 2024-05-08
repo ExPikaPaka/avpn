@@ -4,24 +4,50 @@ CFLAGS = -std=c++14 -O3 -Wall -Wextra -pedantic
 
 # Executable
 EXECUTABLE = server
+
+# Source directories
 SRCDIR = src
+TESTDIR = tests
+
+# Source files
 SRCFILES = $(wildcard $(SRCDIR)/*.cpp)
+TESTFILES = $(wildcard $(TESTDIR)/*.cpp)
+
+# Object files
 OBJFILES = $(SRCFILES:$(SRCDIR)/%.cpp=$(BUILD_DIR)/%.o)
+TESTOBJFILES = $(TESTFILES:$(TESTDIR)/%.cpp=$(BUILD_DIR)/%.o)
+
+# Main file
 MAIN = main.cpp
 
-# Directory settings
+# Build directory
 BUILD_DIR ?= build
 
-# Default make target
-all: $(BUILD_DIR)/$(EXECUTABLE)
+# External libraries
+LIBS = -lcrypto
+TESTLIBS = -lgtest -lgtest_main -lpthread
 
-# Executable recipe (compiling server.cpp and objects)
+# Default make target
+all: $(BUILD_DIR)/$(EXECUTABLE) $(BUILD_DIR)/run_tests
+
+# Server executable
 $(BUILD_DIR)/$(EXECUTABLE): $(MAIN) $(OBJFILES) | $(BUILD_DIR)
-	$(COMPILER) $(CFLAGS) -o $@ $^ -lcrypto
+	$(COMPILER) $(CFLAGS) -o $@ $^ $(LIBS)
+
+# Test executable recipe
+$(BUILD_DIR)/run_tests: $(TESTOBJFILES) $(OBJFILES) | $(BUILD_DIR)
+	$(COMPILER) $(CFLAGS) -o $@ $^ $(TESTLIBS) $(LIBS)
 
 # Object files compilation
 $(BUILD_DIR)/%.o: $(SRCDIR)/%.cpp | $(BUILD_DIR)
 	$(COMPILER) $(CFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/%.o: $(TESTDIR)/%.cpp | $(BUILD_DIR)
+	$(COMPILER) $(CFLAGS) -c -o $@ $<
+
+# Run tests
+run_tests: $(BUILD_DIR)/run_tests
+	./$(BUILD_DIR)/run_tests
 
 # Create build directory
 $(BUILD_DIR):
@@ -30,3 +56,6 @@ $(BUILD_DIR):
 # Clean build directory
 clean:
 	rm -rf $(BUILD_DIR)
+
+
+
