@@ -12,6 +12,7 @@
 
 #include "Diffi_Hellman.h"
 #include "AES128.h"
+#include "Logger.h"
 
 class AuthManager {
 private:
@@ -29,6 +30,9 @@ private:
 
     // Stores PublicClientIP = ClientData
     std::unordered_map<uint32_t, ClientData> authorizedClients;
+
+    // Logger instance
+    ent::util::Logger* logger;
 
 public:
     // Default constructer. Opens DB file and reads it to the program DB.

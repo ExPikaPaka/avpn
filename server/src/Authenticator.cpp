@@ -1,6 +1,7 @@
 #include "Authenticator.h"
 
 AuthManager::AuthManager(const std::string& filename) {
+    logger = ent::util::Logger::getInstance();
     if (!loadUserDB(filename)) {
         throw std::runtime_error("Failed to load user database");
     }
@@ -16,11 +17,12 @@ bool AuthManager::authenticate(const std::string& message, const sockaddr_in& cl
         auto iter = authorizedClients.find(clientAddr.sin_addr.s_addr);
         iter->second.lastAccessTime = std::chrono::steady_clock::now();
         iter->second.isAuthorized = true;
-        std::cout << "The user " << credentials.first << " is authorized" << std::endl;
+        
+        logger->addLog("| AuthManager | The user " + credentials.first + " is authorized.", ent::util::level::INFO);
         return true;
     }
 
-    std::cout << "Incorrect login or password" << std::endl;
+    logger->addLog("| AuthManager | The user " + credentials.first + " failed to authorize!", ent::util::level::INFO);
     return false;
 }
 
@@ -46,7 +48,7 @@ std::string AuthManager::getPublicServerKey(const std::string& message, const so
         // Знайти вільну IP-адресу
         in_addr_t freeIP = findFreeIP();
         if (freeIP == 0) {
-            std::cerr << "No free IP addresses available" << std::endl;
+            logger->addLog("| AuthManager | No free IP address is available!", ent::util::level::WARN);
             return "No free IP addresses available";
         }
 
@@ -54,7 +56,9 @@ std::string AuthManager::getPublicServerKey(const std::string& message, const so
         std::string publicKeyAndIP = std::to_string(diffiHellman->getPublicKey()) + " " + inet_ntoa(*(in_addr*)&freeIP);
         return publicKeyAndIP;
     } catch(const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::string errMessage = e.what();
+        logger->addLog("| AuthManager | Got error during generating server's public key: " + errMessage, ent::util::level::ERROR);
+
         return "Invalid message parameters";
     }
 }

@@ -2,6 +2,9 @@
 
 UDPServer::UDPServer(uint16_t port, size_t numThreads)
     : threadPool(std::make_unique<ThreadPool>(numThreads)) {
+    logger = ent::util::Logger::getInstance();
+    logger->addLog("| UDPServer | Creating UDPServer.", ent::util::level::INFO);
+
     socketFd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (socketFd == -1) {
         throw std::system_error(errno, std::system_category(), "Failed to create socket");
@@ -11,6 +14,8 @@ UDPServer::UDPServer(uint16_t port, size_t numThreads)
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port);
+
+    logger->addLog("| UDPServer | Server started on port " + std::to_string(port) + ".", ent::util::level::INFO);
 }
 int UDPServer::createSocket() {
     
@@ -52,19 +57,33 @@ bool UDPServer::start() {
 
 void UDPServer::run() {
     char buffer[MTU];
-    tun = std::make_unique<TunInterface>("tun0");
-    auth = std::make_unique<AuthManager>("res/db/userdb.txt");
+    std::string tunName = "tun0";
+    std::string userDBPath = "res/db/userdb.txt";
 
+    // Connecting to TUN device
+    logger->addLog("| UDPServer | Connecting to the TUN device '" + tunName + "'..." , ent::util::level::INFO);
+    tun = std::make_unique<TunInterface>(tunName);
+    logger->addLog("| UDPServer | TUN device connected successfully!", ent::util::level::INFO);
+
+    // Loading user DB
+    logger->addLog("| UDPServer | Loading the user database '" + userDBPath + "'..." , ent::util::level::INFO);
+    auth = std::make_unique<AuthManager>(userDBPath);
+    logger->addLog("| UDPServer | User database loaded sucessfully!", ent::util::level::INFO);
+
+    logger->addLog("| UDPServer | Launching server to client communication thread." , ent::util::level::INFO);
     std::thread serverToClientThread([this]() {
         runReadTun();
     });
 
+    logger->addLog("| UDPServer | Launching client activity check thread." , ent::util::level::INFO);
     std::thread threadCheckClientActivity([this]() {
         runCheckClientActivity();
     });
 
     serverToClientThread.detach();
     threadCheckClientActivity.detach();
+
+    logger->addLog("| UDPServer | Server is running...", ent::util::level::INFO);
     while (true) {
         sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
@@ -76,6 +95,7 @@ void UDPServer::run() {
             }
             continue; 
         }
+
         std::string message(buffer, bytesReceived);
         threadPool->enqueue([this, message, clientAddr, clientLen] {
             handleGuest(message, clientAddr, clientLen);
@@ -84,8 +104,14 @@ void UDPServer::run() {
 }
 
 void UDPServer::handleGuest(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen){
+    std::string clientIP = inet_ntoa(clientAddr.sin_addr);
+
+    // Handling client
     if (auth->isDiffieHellmanPerformed(clientAddr)) {
         if (auth->authenticate(message, clientAddr)) {
+            logger->addLog("| UDPServer | Client " + clientIP + " authenticated!", ent::util::level::INFO);
+            logger->addLog("| UDPServer | Attempting to handle client " + clientIP + " in a separate thread...", ent::util::level::INFO);
+
             int ClientSocket = createSocket();
             sockaddr_in ClientSocketAddr;
             socklen_t ClientSocketAddrLen = sizeof(ClientSocketAddr);
@@ -101,19 +127,24 @@ void UDPServer::handleGuest(std::string message, const sockaddr_in& clientAddr, 
             });
 
             clientToServerThread.detach();
+            logger->addLog("| UDPServer | Handling client " + clientIP + " in a separate thread!", ent::util::level::INFO);
         } else {
+            logger->addLog("| UDPServer | Failed to authenticate client " + clientIP + "!", ent::util::level::INFO);
             std::string response = "FAIL";
             sendto(socketFd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientAddr, clientLen);
         }
     } else {
+        logger->addLog("| UDPServer | New client " + clientIP + " is trying to connect!", ent::util::level::INFO);
+        logger->addLog("| UDPServer | Performing Diffie-Hellman hadshake with client " + clientIP + ".", ent::util::level::INFO);
         std::string responseKey = auth->getPublicServerKey(message, clientAddr) ;
         sendto(socketFd, responseKey.c_str(), responseKey.length(), 0, (struct sockaddr*)&clientAddr, clientLen);
     }
 }
 
 void UDPServer::handleClient(const int ClientSocket, const sockaddr_in& clientAddr, socklen_t clientLen) {
+    std::string clientIP = inet_ntoa(clientAddr.sin_addr);
+
     auth->updateClientActivity(clientAddr);
-    std::cout << "Client " << inet_ntoa(clientAddr.sin_addr) << " connected" << std::endl;
     char buffer[MTU];
     while (auth->isClientAuthorized(clientAddr)) {
         try {
@@ -126,11 +157,13 @@ void UDPServer::handleClient(const int ClientSocket, const sockaddr_in& clientAd
             }
 
         } catch (const std::exception& e) {
-            std::cerr << e.what() << '\n';
+            std::string errMessage = e.what();
+            std::string logMessage = "| UDPServer | Got error during client " + clientIP + " communication: " + errMessage;
+            logger->addLog(logMessage, ent::util::level::ERROR);
         }
     }
     closeSocket(ClientSocket);
-    std::cout << "Client " << inet_ntoa(clientAddr.sin_addr) << " disconnected" << std::endl;
+    logger->addLog("| UDPServer | Client " + clientIP + " disconnected.", ent::util::level::INFO);
 }
 
 void UDPServer::runReadTun() {
@@ -146,7 +179,15 @@ void UDPServer::runReadTun() {
                 sendto(auth->getClientSocket(clientAddr), encodedText.c_str(), encodedText.size(), 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
             }
         } catch (const std::exception& e) {
-            std::cerr << e.what() << '\n';
+            std::string errMessage = e.what();
+
+            // Time from time the router is sending some packets to the 
+            //   TUN device, but their destination is nobody from our  
+            //   clients so we just abort it.
+            if (errMessage == "Local IP client is not found") {
+                continue; 
+            }
+            logger->addLog("| UDPServer | Got error during reading from the TUN device: " + errMessage, ent::util::level::ERROR);
         }
     }
 }
