@@ -38,7 +38,7 @@ class SHA256 {
     // Function to compute SHA-256 hash of a string (64 characters)
     fun getSHA256(string: String): String {
         update(string)
-        return toString32(digest())
+        return toString64(digest())
     }
 
     // Function to compute SHA-128 hash of a string (32 characters)
