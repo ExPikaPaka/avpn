@@ -5,7 +5,7 @@ UDPServer::UDPServer(uint16_t port, size_t numThreads)
     logger = ent::util::Logger::getInstance();
     logger->addLog("| UDPServer | Creating UDPServer.", ent::util::level::INFO);
 
-    socketFd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    socketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (socketFd == -1) {
         throw std::system_error(errno, std::system_category(), "Failed to create socket");
     }
@@ -132,6 +132,7 @@ void UDPServer::handleGuest(std::string message, const sockaddr_in& clientAddr, 
             logger->addLog("| UDPServer | Failed to authenticate client " + clientIP + "!", ent::util::level::INFO);
             std::string response = "FAIL";
             sendto(socketFd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientAddr, clientLen);
+            auth->removeClient(clientAddr);
         }
     } else {
         logger->addLog("| UDPServer | New client " + clientIP + " is trying to connect!", ent::util::level::INFO);
