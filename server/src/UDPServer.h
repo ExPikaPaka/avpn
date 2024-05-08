@@ -17,6 +17,7 @@
 #include "ThreadPool.h"
 #include "TunInterface.h"
 #include "Authenticator.h"
+#include "Logger.h"
 
 class UDPServer {
 public:
@@ -36,6 +37,9 @@ private:
     std::unique_ptr<AuthManager> auth;
     AES128 aes;
     int MTU = 1500;
+
+    // Logger instance
+    ent::util::Logger* logger;
 
     // Function of processing unauthorized client packets
     void handleGuest(std::string message, const sockaddr_in& clientAddr, socklen_t clientLen);
