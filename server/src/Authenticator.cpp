@@ -111,6 +111,18 @@ void AuthManager::updateClientActivity(const sockaddr_in& clientAddr) {
     }
 }
 
+void AuthManager::removeClient(const sockaddr_in& clientAddr) {
+    try {
+        // Attempt to remove the client from the authorizedClients map
+        auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
+        if (it != authorizedClients.end()) {
+            authorizedClients.erase(it);
+        } 
+    } catch (const std::exception& e) {
+        logger->addLog("| AuthManager | Failed to remove client: " + std::string(e.what()), ent::util::level::ERROR);
+    }
+}
+
 sockaddr_in AuthManager::getClientPublicAddr(in_addr_t localIP) {
     for (const auto& [clientAddr, clientData] : authorizedClients) {
         if (clientData.localIP == localIP) {

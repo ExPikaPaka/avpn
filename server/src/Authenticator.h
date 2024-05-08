@@ -68,6 +68,9 @@ public:
     // Update the activity timer
     void updateClientActivity(const sockaddr_in& clientAddr);
 
+    // Remove client
+    void removeClient(const sockaddr_in& clientAddr);
+
 private:
     // Loads DB from file
     bool loadUserDB(const std::string& filename);
