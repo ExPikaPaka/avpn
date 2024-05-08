@@ -13,7 +13,7 @@
 class TunInterface {
 public:
     // Basic constructor. Creates TUN interface with specified name, and configures
-    TunInterface(const std::string& interfaceName, const std::string& ipAddress, const std::string& netmask);
+    TunInterface(const std::string& interfaceName);
 
     // Destructor. Closes TUN interface
     ~TunInterface();
@@ -23,6 +23,8 @@ public:
 
     // Write data to the buffer from the TUN device
     int write(const char* data, int dataSize);
+
+    int getFd();
 
 private:
     // TUN descriptor (it is a device file on Linux located at /dev/net/tun) 

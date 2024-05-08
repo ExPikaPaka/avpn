@@ -59,30 +59,6 @@ std::string AuthManager::getPublicServerKey(const std::string& message, const so
     }
 }
 
-
-in_addr_t AuthManager::findFreeIP() {
-    in_addr_t startIP = inet_addr("10.0.0.2");
-    in_addr_t endIP = inet_addr("10.0.0.255");
-
-    for (in_addr_t ip = ntohl(startIP); ip <= ntohl(endIP); ++ip) {
-        in_addr_t currentIP = htonl(ip);
-        bool ipUsed = false;
-
-        for (const auto& client : authorizedClients) {
-            if (client.second.localIP == currentIP) {
-                ipUsed = true;
-                break;
-            }
-        }
-
-        if (!ipUsed) {
-            return currentIP;
-        }
-    }
-
-    return 0;
-}
-
 std::string AuthManager::getSharedKey(const sockaddr_in& clientAddr) {
     auto it = authorizedClients.find(clientAddr.sin_addr.s_addr);
     if (it == authorizedClients.end()) {
@@ -163,4 +139,27 @@ std::pair<std::string, std::string> AuthManager::parseCredentials(const std::str
         return {message.substr(0, pos), message.substr(pos + 1)};
     }
     return std::make_pair("", "");
+}
+
+in_addr_t AuthManager::findFreeIP() {
+    in_addr_t startIP = inet_addr("10.0.0.2");
+    in_addr_t endIP = inet_addr("10.0.0.255");
+
+    for (in_addr_t ip = ntohl(startIP); ip <= ntohl(endIP); ++ip) {
+        in_addr_t currentIP = htonl(ip);
+        bool ipUsed = false;
+
+        for (const auto& client : authorizedClients) {
+            if (client.second.localIP == currentIP) {
+                ipUsed = true;
+                break;
+            }
+        }
+
+        if (!ipUsed) {
+            return currentIP;
+        }
+    }
+
+    return 0;
 }
