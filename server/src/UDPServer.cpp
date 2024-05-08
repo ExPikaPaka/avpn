@@ -19,7 +19,7 @@ UDPServer::UDPServer(uint16_t port, size_t numThreads)
 }
 int UDPServer::createSocket() {
     
-    int newSocketFd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    int newSocketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (newSocketFd == -1) {
         throw std::system_error(errno, std::system_category(), "Failed to create new socket");
     }
@@ -29,6 +29,12 @@ int UDPServer::createSocket() {
     newSocketAddr.sin_family = AF_INET;
     newSocketAddr.sin_addr.s_addr = INADDR_ANY;
     newSocketAddr.sin_port = htons(0);
+
+    struct timeval timeout;
+    timeout.tv_sec = clientTimeoutInSeconds; 
+    timeout.tv_usec = 0;
+    setsockopt(newSocketFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
 
     if (bind(newSocketFd, (struct sockaddr *)&newSocketAddr, sizeof(newSocketAddr)) < 0) {
         throw std::system_error(errno, std::system_category(), "Failed to bind socket");
@@ -196,6 +202,6 @@ void UDPServer::runReadTun() {
 void UDPServer::runCheckClientActivity() {
     while (true) {
         auth->checkClientActivity();
-        std::this_thread::sleep_for(std::chrono::seconds(60));
+        std::this_thread::sleep_for(std::chrono::seconds(clientTimeoutInSeconds));
     }
 }

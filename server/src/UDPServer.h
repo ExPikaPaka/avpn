@@ -35,6 +35,7 @@ private:
     std::unique_ptr<ThreadPool> threadPool;
     std::unique_ptr<TunInterface> tun;
     std::unique_ptr<AuthManager> auth;
+    int clientTimeoutInSeconds = 60;
     AES128 aes;
     int MTU = 1500;
 
